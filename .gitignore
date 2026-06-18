@@ -1,0 +1,6 @@
+.env
+.env*
+workspace/*
+workspace/
+.venv/
+__pycache__/
