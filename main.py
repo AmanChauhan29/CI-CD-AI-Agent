@@ -1,40 +1,29 @@
+import time
 from app.github_client import GitHubClient
-from app.incident_respository import save_incident
+from app.incident_respository import save_incident,mark_incident_resolved
 from app.log_service import LogService
 from app.classifiers.failure_classifiers import FailureClassifier
 from database.db import init_db
 from app.llm.analyzer import FailureAnalyzer
 from app.analysis_repository import save_analysis   
 from app.repository.git_service import GitService
-from app.repository.pr_service import PullRequestService
+from app.repository.pr_service import PullRequestService 
 from app.patch_generator.patch_generator import PatchGenerator
-from app.patch_generator.patch_llm_generator import (
-    PatchLLMGenerator
-)
+from app.patch_generator.patch_llm_generator import PatchLLMGenerator
 from app.patch_generator.patch_quality_checker import PatchQualityChecker
 import shutil
 from pathlib import Path
-from app.patch_generator.patch_applier import (
-    PatchApplier
-)
-from app.patch_generator.patch_validator import (
-    PatchValidator
-)
-from app.patch_generator.remediation_verifier import (
-    RemediationVerifier
-)
-from app.repository.repo_context import (
-    RepositoryContextCollector
-)
+from app.patch_generator.patch_applier import PatchApplier
+from app.patch_generator.patch_validator import PatchValidator
+from app.patch_generator.remediation_verifier import RemediationVerifier
+from app.repository.repo_context import RepositoryContextCollector
 from app.config import (
     GITHUB_TOKEN,
     AGENT_NAME,
     REPO_OWNER,
     REPO_NAME
 )
-from app.llm.hf_provider import (
-    HuggingFaceProvider
-)
+from app.llm.hf_provider import HuggingFaceProvider
 
 
 init_db()
@@ -152,30 +141,12 @@ save_analysis(
 
 print("\nAnalysis saved successfully")
 if is_unknown_failure:
-
-    print("\n===== UNKNOWN FAILURE ANALYSIS =====")
-
-    print(f"Run ID: {run_id}")
-    print(f"Workflow: {failed_runs[0]['name']}")
-    print(f"Incident ID: {incident_id}")
-
-    print("\nRoot Cause:")
-    print(analysis.get("root_cause"))
-
-    print("\nWhy It Happened:")
-    print(analysis.get("why_it_happened"))
-
-    print("\nRecommended Solution:")
-    print(analysis.get("suggested_fix"))
-
     print(
-        "\nUnknown failure detected. "
-        "Skipping patch generation, repository modification, "
-        "git push, and PR creation."
+        "\nUnknown failure detected."
+        "\nProceeding with patch generation."
+        "\nAuto merge disabled until verification succeeds."
     )
 
-    exit()
-    
 verifier = RemediationVerifier()
 verification = verifier.verify(
     str(analysis),
@@ -255,6 +226,60 @@ else:
             body=analysis["suggested_fix"],
             base_branch="develop"
         )
-        print(f"PR: {pr['url']}")
+        print(
+            f"PR: {pr['url']}"
+        )
+        time.sleep(20)
+        runs = client.get_workflow_runs_for_branch(
+            branch_name
+        )
+        latest_run = max(
+            runs,
+            key=lambda run: run["id"]
+        )
+
+        print(
+            "\nLatest PR Workflow:"
+        )
+        print(
+            latest_run
+        )
+        completed_run = (
+            client.wait_for_workflow_completion(
+                latest_run["id"]
+            )
+        )
+        print("\nWorkflow Finished:")
+        print(completed_run)
+        if completed_run["conclusion"] == "success":
+            print(
+                "\nWorkflow verification succeeded."
+                "\nMerging PR..."
+            )
+            merge_result = (
+                pr_service.merge_pull_request(
+                    pr["number"]
+                )
+            )
+            print(
+                f"Merged: "
+                f"{merge_result['merged']}"
+            )
+            if merge_result["merged"]:
+                mark_incident_resolved(
+                    incident_id=incident_id,
+                    pr_number=pr["number"],
+                    workflow_run_id=completed_run["id"]
+                )
+
+                print(
+                    f"Incident {incident_id} "
+                    f"marked resolved"
+                )   
+        else:
+            print(
+                "\nWorkflow verification failed."
+                "\nPR will remain open."
+            )       
     else:
         print("Nothing to commit — skipping push/PR")

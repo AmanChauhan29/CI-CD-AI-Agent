@@ -117,3 +117,53 @@ class PullRequestService:
             return pr
 
         return None
+    
+    def merge_pull_request(
+        self,
+        pr_number
+    ):
+        """
+        Merge a PR into its target branch.
+
+        Goal:
+        Apply the generated remediation to the repository so
+        subsequent workflow runs test the fixed code.
+
+        Returns:
+        {
+            "merged": bool,
+            "sha": str
+        }
+        """
+
+        print(
+            f"\nMerging PR #{pr_number}..."
+        )
+
+        try:
+
+            pr = self.repo.get_pull(
+                pr_number
+            )
+
+            result = pr.merge(
+                merge_method="squash"
+            )
+
+        except GithubException as exc:
+
+            print(
+                f"Failed to merge PR "
+                f"#{pr_number}: {exc.data}"
+            )
+
+            raise
+
+        print(
+            f"Merged PR #{pr_number}"
+        )
+
+        return {
+            "merged": result.merged,
+            "sha": result.sha
+        }

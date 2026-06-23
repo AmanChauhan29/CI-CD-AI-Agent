@@ -10,24 +10,34 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS incidents (
+    CREATE TABLE IF NOT EXISTS incidents (
 
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-            run_id TEXT,
+        run_id TEXT,
 
-            workflow_name TEXT,
+        workflow_name TEXT,
 
-            category TEXT,
+        category TEXT,
 
-            matched_pattern TEXT,
+        matched_pattern TEXT,
 
-            file_name TEXT,
+        file_name TEXT,
 
-            snippet TEXT,
+        snippet TEXT,
 
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
+        status TEXT DEFAULT 'open',
+
+        resolution_type TEXT,
+
+        pr_number INTEGER,
+
+        resolved_workflow_run TEXT,
+
+        resolved_at TIMESTAMP,
+
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
     """)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS analyses (

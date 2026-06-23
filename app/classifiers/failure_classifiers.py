@@ -29,10 +29,59 @@ class FailureClassifier:
                             "file": file_name,
                             "snippet": snippet
                         }
+        largest_file = None
+        largest_content = ""
+        for file_name, content in logs.items():
+            if len(content) > len(largest_content):
+                largest_file = file_name
+                largest_content = content
+        error_keywords = [
+            "error",
+            "failed",
+            "exception",
+            "traceback",
+            "exit code"
+        ]
+
+        snippet = None
+
+        content_lines = (
+            largest_content.splitlines()
+        )
+
+        for index, line in enumerate(content_lines):
+
+            lower_line = line.lower()
+
+            if any(
+                keyword in lower_line
+                for keyword in error_keywords
+            ):
+
+                start = max(
+                    0,
+                    index - 5
+                )
+
+                end = min(
+                    len(content_lines),
+                    index + 15
+                )
+
+                snippet = "\n".join(
+                    content_lines[start:end]
+                )
+
+                break
+
+        if snippet is None:
+
+            snippet = largest_content[-1000:]
+
         return {
             "category": "unknown_failure",
             "confidence": 0.0,
             "matched_pattern": None,
-            "file": None,
-            "snippet": None
+            "file": largest_file,
+            "snippet": snippet
         }
