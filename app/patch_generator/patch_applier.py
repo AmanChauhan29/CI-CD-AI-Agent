@@ -113,7 +113,8 @@ def _find_with_fallback(haystack, needle):
 
 
 class PatchApplier:
-
+    def __init__(self):
+        pass
     def resolve_file_path(self, repo_path, file_name):
         repo_path = Path(repo_path)
         matches = list(repo_path.rglob(file_name))

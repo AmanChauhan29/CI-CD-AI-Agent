@@ -38,21 +38,18 @@ class GitHubClient:
 
         return response.json()
     def get_workflow_run(self, run_id):
-
         url = (
             f"{self.base_url}"
             f"/repos/{REPO_OWNER}/{REPO_NAME}"
             f"/actions/runs/{run_id}"
         )
-
         response = requests.get(
             url,
             headers=self.headers
         )
-
         response.raise_for_status()
-
         return response.json()
+    
     def print_workflow_runs(self):
 
         data = self.get_workflow_runs()
@@ -98,21 +95,17 @@ class GitHubClient:
         return failed_runs
     
     def download_workflow_logs(self, run_id):
-
         url = (
             f"{self.base_url}"
             f"/repos/{REPO_OWNER}/{REPO_NAME}"
             f"/actions/runs/{run_id}/logs"
         )
-
         response = requests.get(
             url,
             headers=self.headers,
             allow_redirects=True
         )
-
         response.raise_for_status()
-
         return response.content
     
     def get_workflow_runs_for_branch(

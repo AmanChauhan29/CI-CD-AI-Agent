@@ -29,9 +29,7 @@ print(
 )
 
 async def main():
-
     token = GITHUB_PAT
-
     http_client = httpx.AsyncClient(
         headers={
             "Authorization": f"Bearer {token}"
@@ -69,11 +67,6 @@ async def main():
                 print(tool.name)
                 # print(tool.description)
                 # print(tool.inputSchema)
-
-            
-
-            
-
     await http_client.aclose()
 
 
