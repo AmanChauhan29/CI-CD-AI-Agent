@@ -6,6 +6,7 @@ from app.worker import StartWorker
 app = FastAPI()
 worker = StartWorker()
 
+
 @app.on_event("startup")
 def startup():
     thread = threading.Thread(
